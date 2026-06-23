@@ -4,7 +4,7 @@ preprocessor.py
 Prepares raw Fashion-MNIST data for CNN training:
 normalization, channel-dimension reshape, and train/validation split.
 """
-from typing import Optional,Tuple
+from typing import Optional, Tuple
 import sys
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -15,31 +15,29 @@ from src.logger import Logger
 _logger_obj = Logger("preprocessor")
 logger = _logger_obj.get_logger()
 
+
 class Preprocessor:
-    
     """
     Transforms raw image/label arrays into CNN-ready data.
 
     Design choice: normalize() and add_channel_dimension() are @staticmethod
     because they are pure transformations — given an array, they return a
-    new array, without needing any instance state (self.something). They're
-    grouped here for organization, not because they depend on this object.
+    new array, without needing any instance state (self.something).
 
     process() does NOT run automatically in __init__ — same fail-fast
     pattern as DataLoader. Call process() explicitly; accessing results
     before that raises CustomException.
     """
-    
-    def __init__(self, x_train, y_train, x_test, y_test, val_size = 0.2, random_state = 42):
+
+    def __init__(self, x_train, y_train, x_test, y_test, val_size=0.2, random_state=42):
         """Store raw data and split config. Nothing is processed yet."""
-        self._raw_x_train= x_train
-        self._raw_y_train= y_train
-        self._raw_x_test= x_test
-        self._raw_y_test= y_test
+        self._raw_x_train = x_train
+        self._raw_y_train = y_train
+        self._raw_x_test = x_test
+        self._raw_y_test = y_test
         self._val_size = val_size
         self._random_state = random_state
-        
-        
+
         self._x_train: Optional[np.ndarray] = None
         self._x_val: Optional[np.ndarray] = None
         self._x_test: Optional[np.ndarray] = None
@@ -49,23 +47,25 @@ class Preprocessor:
 
         self._is_processed: bool = False
         logger.info("Preprocessor instance created. Data not processed yet.")
-        
-        @staticmethod
-        def normalize(images):
-            return images /255
-        
-        @staticmethod
-        def add_channel_dimension(images):
-            """Reshapes (N, 28, 28) -> (N, 28, 28, 1) for Conv2D compatibility."""
-            return images.reshape(-1, 28,28,1)
-        
-        def process(self):
-            """
-            Runs the full preprocessing pipeline:
-            normalize -> add channel dimension -> train/validation split.
-            Test data is normalized/reshaped but NEVER split further —
-            it stays untouched for final evaluation only.
-            """
+
+    # --- These two are now proper class methods (same indent as __init__) ---
+
+    @staticmethod
+    def normalize(images):
+        """Scales pixel values from [0, 255] to [0.0, 1.0]."""
+        return images / 255.0
+
+    @staticmethod
+    def add_channel_dimension(images):
+        """Reshapes (N, 28, 28) -> (N, 28, 28, 1) for Conv2D compatibility."""
+        return images.reshape(-1, 28, 28, 1)
+
+    def process(self) -> None:
+        """
+        Runs the full preprocessing pipeline:
+        normalize -> add channel dimension -> train/validation split.
+        Test data is normalized/reshaped but NEVER split further.
+        """
         try:
             logger.info("Starting preprocessing pipeline...")
 
